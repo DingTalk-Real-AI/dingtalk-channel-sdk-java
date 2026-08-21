@@ -10,7 +10,7 @@
 
 ```xml
 <dependency>
-  <groupId>io.github.typefield</groupId>
+  <groupId>com.dingtalk</groupId>
   <artifactId>dingtalk-channel-sdk</artifactId>
   <version>0.1.0</version>
 </dependency>
@@ -69,7 +69,7 @@ s.finish("");
 业务代码通常只需导入根包：
 
 ```java
-import io.github.typefield.dingtalk.channel.DingTalkChannel;
+import com.dingtalk.dingtalk.channel.DingTalkChannel;
 ```
 
 子包（`normalize` / `safety` / `outbound`）属内部分层，不在兼容性承诺范围内。
@@ -98,7 +98,7 @@ mvn test        # 34 个测试
 
 ```bash
 DD_CLIENT_ID=... DD_CLIENT_SECRET=... \
-  mvn -q compile exec:java -Dexec.mainClass=io.github.typefield.dingtalk.channel.example.LiveCheck
+  mvn -q compile exec:java -Dexec.mainClass=com.dingtalk.dingtalk.channel.example.LiveCheck
 ```
 
 ## License

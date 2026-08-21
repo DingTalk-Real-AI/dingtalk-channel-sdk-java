@@ -282,7 +282,7 @@ Java: `mvn -q compile exec:java -Dexec.mainClass=...LiveCheck`）。
 ## 目录结构（四层分包）
 
 ```
-io.github.typefield.dingtalk.channel
+com.dingtalk.dingtalk.channel
 ├── （根）             公开 API 与组装：DingTalkChannel Config IncomingMessage CardAction
 │                      Reply ProactiveSender SendTarget StreamConn TokenProvider
 │                      CardClient CardStreamer HttpClient OapiClient Emotion
