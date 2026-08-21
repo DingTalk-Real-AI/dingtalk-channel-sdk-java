@@ -11,7 +11,7 @@
 
   <name>dingtalk-channel-sdk-java</name>
   <description>DingTalk Channel SDK (Java) — runtime-agnostic conversation access layer for AI agents</description>
-  <url>https://github.com/typefield/dingtalk-channel-sdk-java</url>
+  <url>https://github.com/DingTalk-Real-AI/dingtalk-channel-sdk-java</url>
 
   <properties>
     <maven.compiler.source>8</maven.compiler.source>
