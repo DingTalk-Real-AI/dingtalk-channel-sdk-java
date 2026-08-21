@@ -7,9 +7,9 @@
 
 | 仓库 | 语言 | 依赖 | 测试 |
 |---|---|---|---|
-| [typefield/dingtalk-channel-sdk-go](https://github.com/typefield/dingtalk-channel-sdk-go) | Go 1.22+ | gorilla/websocket | 19 tests（-race 干净） |
-| [typefield/dingtalk-channel-sdk-nodejs](https://github.com/typefield/dingtalk-channel-sdk-nodejs) | Node 18+ | ws | 12 tests |
-| [typefield/dingtalk-channel-sdk-python](https://github.com/typefield/dingtalk-channel-sdk-python) | Python 3.10+ | websockets | 12 tests |
+| [typefield/dingtalk-channel-sdk-go](https://github.com/DingTalk-Real-AI/dingtalk-channel-sdk-go) | Go 1.22+ | gorilla/websocket | 19 tests（-race 干净） |
+| [typefield/dingtalk-channel-sdk-nodejs](https://github.com/DingTalk-Real-AI/dingtalk-channel-sdk-nodejs) | Node 18+ | ws | 12 tests |
+| [typefield/dingtalk-channel-sdk-python](https://github.com/DingTalk-Real-AI/dingtalk-channel-sdk-python) | Python 3.10+ | websockets | 12 tests |
 | [typefield/dingtalk-channel-sdk-java](https://github.com/DingTalk-Real-AI/dingtalk-channel-sdk-java) | JDK 8+ | Java-WebSocket + Gson | 12 tests |
 
 每仓含：完整源码、单测、`SPEC.md`（四语言统一契约）、流式 echo 示例、**livecheck 真实联调程序**、README、MIT LICENSE。
