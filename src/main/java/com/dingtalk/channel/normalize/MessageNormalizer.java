@@ -88,8 +88,8 @@ public final class MessageNormalizer {
                     }
                 }
             } else if ("picture".equals(itemType)) {
-                // 段值即下载码：仅接受非空字符串，防止脏数据；
-                // 同一下载码单条消息内去重。
+                // 对齐 lark channel-sdk 富文本附件区：段值即下载码；
+                // 仅接受非空字符串，防止脏数据；同一下载码单条消息内去重。
                 String code = strictStr(item, "picture");
                 if (!code.isEmpty() && result.seenCodes.add(code)) {
                     result.resources.add(new IncomingMessage.Resource("image", code));

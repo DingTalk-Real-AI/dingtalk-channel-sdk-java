@@ -217,7 +217,7 @@ public final class DingTalkChannel {
     }
 
     /**
-     * 流式下载媒体文件到本地路径，不整块占用内存。
+     * 流式下载媒体文件到本地路径，不整块占用内存（对齐 lark channel-sdk 的 downloadResourceToFile）。
      * 父目录必须已存在；先写同目录临时文件再原子重命名，失败不落半截文件。
      *
      * @return 写入的字节数
