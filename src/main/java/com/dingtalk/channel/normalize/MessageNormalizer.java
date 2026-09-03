@@ -16,11 +16,14 @@ public final class MessageNormalizer {
         public String text;
         public List<IncomingMessage.Resource> resources;
         public List<IncomingMessage.Mention> mentions;
+        /** richText 段内已见过的下载码（单条消息内去重）。 */
+        public java.util.Set<String> seenCodes;
 
         public ParseResult() {
             this.text = "";
             this.resources = new ArrayList<>();
             this.mentions = new ArrayList<>();
+            this.seenCodes = new java.util.HashSet<>();
         }
     }
 
@@ -83,6 +86,19 @@ public final class MessageNormalizer {
                     for (JsonElement m : item.getAsJsonArray("atMobiles")) {
                         result.mentions.add(new IncomingMessage.Mention(m.getAsString(), "", false));
                     }
+                }
+            } else if ("picture".equals(itemType)) {
+                // 对齐 lark channel-sdk 富文本附件区：段值即下载码；
+                // 仅接受非空字符串，防止脏数据；同一下载码单条消息内去重。
+                String code = strictStr(item, "picture");
+                if (!code.isEmpty() && result.seenCodes.add(code)) {
+                    result.resources.add(new IncomingMessage.Resource("image", code));
+                }
+            } else if ("file".equals(itemType)) {
+                String code = strictStr(item, "downloadCode");
+                String fileName = strictStr(item, "fileName");
+                if (!code.isEmpty() && result.seenCodes.add(code)) {
+                    result.resources.add(new IncomingMessage.Resource("file", code, fileName, ""));
                 }
             }
         }
@@ -181,5 +197,14 @@ public final class MessageNormalizer {
 
     private static String str(JsonObject o, String key) {
         return o != null && o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : "";
+    }
+
+    /** 严格取字符串：数字/布尔等非字符串原始值一律视为缺失（getAsString 会把 123 强转成 "123"，不能用于防脏数据）。 */
+    private static String strictStr(JsonObject o, String key) {
+        if (o != null && o.has(key) && !o.get(key).isJsonNull()
+                && o.get(key).isJsonPrimitive() && o.getAsJsonPrimitive(key).isString()) {
+            return o.get(key).getAsString();
+        }
+        return "";
     }
 }
