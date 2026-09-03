@@ -69,7 +69,7 @@ s.finish("");
 Application code typically imports only the root package:
 
 ```java
-import com.dingtalk.dingtalk.channel.DingTalkChannel;
+import com.dingtalk.channel.DingTalkChannel;
 ```
 
 Sub-packages (`normalize` / `safety` / `outbound`) are internal layering and carry no compatibility promise.
@@ -98,7 +98,7 @@ Live check:
 
 ```bash
 DD_CLIENT_ID=... DD_CLIENT_SECRET=... \
-  mvn -q compile exec:java -Dexec.mainClass=com.dingtalk.dingtalk.channel.example.LiveCheck
+  mvn -q compile exec:java -Dexec.mainClass=com.dingtalk.channel.example.LiveCheck
 ```
 
 ## License

@@ -282,7 +282,7 @@ progressive PASS/FAIL: connection → receive message → text reply (token) →
 ## Directory Structure (Four-Layer Package)
 
 ```
-com.dingtalk.dingtalk.channel
+com.dingtalk.channel
 ├── (root)             Public API and assembly: DingTalkChannel Config IncomingMessage CardAction
 │                      Reply ProactiveSender SendTarget StreamConn TokenProvider
 │                      CardClient CardStreamer HttpClient OapiClient Emotion
