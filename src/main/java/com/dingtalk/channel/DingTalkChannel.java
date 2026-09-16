@@ -194,11 +194,85 @@ public final class DingTalkChannel {
 
     /** 下载媒体文件。 */
     public byte[] downloadFile(String downloadCode, String msgId, String mediaType) {
+        String downloadUrl = resolveDownloadUrl(downloadCode, msgId);
+        SsrfGuard.assertPublicUrl(downloadUrl, cfg.ssrfAllowlist);
+
+        // 下载文件内容
+        try {
+            java.net.URL u = new java.net.URL(downloadUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(30000);
+            int status = conn.getResponseCode();
+            if (status != 200) {
+                throw new RuntimeException("download failed: http " + status);
+            }
+            try (java.io.InputStream in = conn.getInputStream()) {
+                return in.readAllBytes();
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("download failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 流式下载媒体文件到本地路径，不整块占用内存。
+     * 父目录必须已存在；先写同目录临时文件再原子重命名，失败不落半截文件。
+     *
+     * @return 写入的字节数
+     */
+    public long downloadFileToFile(String downloadCode, String msgId, String mediaType, java.nio.file.Path destPath) {
+        if (destPath == null || destPath.toString().isEmpty()) {
+            throw new IllegalArgumentException("destPath cannot be empty");
+        }
+        String downloadUrl = resolveDownloadUrl(downloadCode, msgId);
+        SsrfGuard.assertPublicUrl(downloadUrl, cfg.ssrfAllowlist);
+
+        java.nio.file.Path dest = destPath.toAbsolutePath().normalize();
+        java.nio.file.Path tmp = null;
+        try {
+            java.net.URL u = new java.net.URL(downloadUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(30000);
+            int status = conn.getResponseCode();
+            if (status != 200) {
+                throw new RuntimeException("download failed: http " + status);
+            }
+            tmp = java.nio.file.Files.createTempFile(dest.getParent(), "." + dest.getFileName(), ".tmp");
+            long n;
+            try (java.io.InputStream in = conn.getInputStream()) {
+                n = java.nio.file.Files.copy(in, tmp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+            try {
+                java.nio.file.Files.move(tmp, dest,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                tmp = null;
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                java.nio.file.Files.move(tmp, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                tmp = null;
+            }
+            return n;
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("download to file failed: " + e.getMessage(), e);
+        } finally {
+            if (tmp != null) {
+                try {
+                    java.nio.file.Files.deleteIfExists(tmp);
+                } catch (java.io.IOException ignored) {
+                }
+            }
+        }
+    }
+
+    /** 换取媒体下载 URL（downloadCode → downloadUrl）。 */
+    private String resolveDownloadUrl(String downloadCode, String msgId) {
         if (downloadCode == null || downloadCode.isEmpty()) {
             throw new IllegalArgumentException("downloadCode cannot be empty");
         }
-
-        // 先换取下载 URL
         java.util.Map<String, String> headers = new java.util.HashMap<>();
         headers.put("x-acs-dingtalk-access-token", tokens.get());
         String url = cfg.apiBase + "/v1.0/robot/messageFiles/download"
@@ -209,22 +283,7 @@ public final class DingTalkChannel {
         if (downloadUrl.isEmpty()) {
             throw new RuntimeException("empty download URL");
         }
-
-        SsrfGuard.assertPublicUrl(downloadUrl, cfg.ssrfAllowlist);
-
-        // 下载文件内容
-        try {
-            java.net.URL u = new java.net.URL(downloadUrl);
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(30000);
-            try (java.io.InputStream in = conn.getInputStream()) {
-                return in.readAllBytes();
-            }
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("download failed: " + e.getMessage(), e);
-        }
+        return downloadUrl;
     }
 
     // ── 主动发送（已有） ──
