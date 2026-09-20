@@ -10,7 +10,7 @@ Requires JDK 8+. Dependencies: Java-WebSocket and Gson only.
 
 ```xml
 <dependency>
-  <groupId>io.github.typefield</groupId>
+  <groupId>com.dingtalk</groupId>
   <artifactId>dingtalk-channel-sdk</artifactId>
   <version>0.1.0</version>
 </dependency>
@@ -69,7 +69,7 @@ s.finish("");
 Application code typically imports only the root package:
 
 ```java
-import io.github.typefield.dingtalk.channel.DingTalkChannel;
+import com.dingtalk.channel.DingTalkChannel;
 ```
 
 Sub-packages (`normalize` / `safety` / `outbound`) are internal layering and carry no compatibility promise.
@@ -98,7 +98,7 @@ Live check:
 
 ```bash
 DD_CLIENT_ID=... DD_CLIENT_SECRET=... \
-  mvn -q compile exec:java -Dexec.mainClass=io.github.typefield.dingtalk.channel.example.LiveCheck
+  mvn -q compile exec:java -Dexec.mainClass=com.dingtalk.channel.example.LiveCheck
 ```
 
 ## License
