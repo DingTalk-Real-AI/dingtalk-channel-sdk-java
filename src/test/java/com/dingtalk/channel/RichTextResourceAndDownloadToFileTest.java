@@ -23,21 +23,27 @@ public class RichTextResourceAndDownloadToFileTest {
     public void richTextExtractsPictureAndFileResources() {
         String json = "{\"richText\":["
                 + "{\"type\":\"text\",\"text\":\"图1 \"},"
+                + "{\"type\":\"picture\",\"downloadCode\":\"dc-1\"},"
+                + "{\"type\":\"picture\",\"pictureDownloadCode\":\"dc-1\"},"
                 + "{\"type\":\"picture\",\"picture\":\"dc-1\"},"
-                + "{\"type\":\"picture\",\"picture\":\"dc-1\"},"
-                + "{\"type\":\"picture\",\"picture\":\"dc-2\"},"
-                + "{\"type\":\"file\",\"downloadCode\":\"dc-3\",\"fileName\":\"report.pdf\"},"
+                + "{\"type\":\"picture\",\"pictureDownloadCode\":\"dc-2\"},"
+                + "{\"type\":\"picture\",\"picture\":\"dc-3\"},"
+                + "{\"type\":\"file\",\"downloadCode\":\"dc-4\",\"fileName\":\"report.pdf\"},"
                 + "{\"type\":\"text\",\"text\":\" 图2\"}]}";
         JsonObject content = JsonParser.parseString(json).getAsJsonObject();
         MessageNormalizer.ParseResult r = MessageNormalizer.parseContent("richText", content, null);
 
         assertEquals("图1  图2", r.text);
-        assertEquals("重复 dc-1 应去重", 3, r.resources.size());
+        assertEquals("重复 dc-1 应去重", 4, r.resources.size());
         assertEquals("image", r.resources.get(0).type);
         assertEquals("dc-1", r.resources.get(0).downloadCode);
-        assertEquals("file", r.resources.get(2).type);
+        assertEquals("image", r.resources.get(1).type);
+        assertEquals("dc-2", r.resources.get(1).downloadCode);
+        assertEquals("image", r.resources.get(2).type);
         assertEquals("dc-3", r.resources.get(2).downloadCode);
-        assertEquals("report.pdf", r.resources.get(2).fileName);
+        assertEquals("file", r.resources.get(3).type);
+        assertEquals("dc-4", r.resources.get(3).downloadCode);
+        assertEquals("report.pdf", r.resources.get(3).fileName);
     }
 
     @Test
@@ -70,6 +76,10 @@ public class RichTextResourceAndDownloadToFileTest {
             } else if (path.equals("/v1.0/robot/robotInfo")) {
                 respond(ex, "{\"robotCode\":\"ding-test\",\"robotName\":\"TestBot\"}");
             } else if (path.equals("/v1.0/robot/messageFiles/download")) {
+                if (!"POST".equals(ex.getRequestMethod())) {
+                    respond(ex, 405, "{\"error\":\"expected POST\"}");
+                    return;
+                }
                 respond(ex, "{\"downloadUrl\":\"http://127.0.0.1:" + server.getAddress().getPort() + "/media.bin\"}");
             } else if (path.equals("/media.bin")) {
                 ex.getResponseHeaders().set("Content-Type", "application/octet-stream");
@@ -88,10 +98,16 @@ public class RichTextResourceAndDownloadToFileTest {
                     .apiBase(base).oapiBase(base).streamThrottleMs(10).cardQps(100)
                     .ssrfAllowlist(Arrays.asList("127.0.0.1")).build());
 
-            Path dest = Files.createTempDirectory("dl-to-file").resolve("media.bin");
+            Path dest = Files.createTempDirectory("mediatmp").resolve("media.bin");
             long n = ch.downloadFileToFile("dc-1", "m-1", "file", dest);
             assertEquals(media.length, n);
             assertTrue("文件内容不一致", Arrays.equals(media, Files.readAllBytes(dest)));
+
+            // 单字符目标文件名支持
+            Path singleCharDest = Files.createTempDirectory("mediatmp-single").resolve("a");
+            long n2 = ch.downloadFileToFile("dc-1", "m-1", "file", singleCharDest);
+            assertEquals(media.length, n2);
+            assertTrue("单字符文件名文件内容不一致", Arrays.equals(media, Files.readAllBytes(singleCharDest)));
 
             // 原有内存下载语义保持不变
             byte[] bytes = ch.downloadFile("dc-1", "m-1", "file");
@@ -110,6 +126,49 @@ public class RichTextResourceAndDownloadToFileTest {
             }
         } finally {
             server.stop(0);
+        }
+    }
+
+    @Test
+    public void downloadFileSSRFRedirectBypass() throws Exception {
+        com.sun.net.httpserver.HttpServer targetServer =
+                com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        targetServer.createContext("/secret", ex -> respond(ex, "internal-secret"));
+        targetServer.start();
+
+        com.sun.net.httpserver.HttpServer redirectServer =
+                com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        redirectServer.createContext("/", ex -> {
+            String path = ex.getRequestURI().getPath();
+            if (path.equals("/v1.0/oauth2/accessToken")) {
+                respond(ex, "{\"accessToken\":\"new-tok\",\"expireIn\":7200}");
+            } else if (path.equals("/v1.0/robot/messageFiles/download")) {
+                respond(ex, "{\"downloadUrl\":\"http://127.0.0.1:" + redirectServer.getAddress().getPort() + "/redirect\"}");
+            } else if (path.equals("/redirect")) {
+                ex.getResponseHeaders().set("Location", "http://127.0.0.1:" + targetServer.getAddress().getPort() + "/secret");
+                ex.sendResponseHeaders(302, -1);
+                ex.close();
+            } else {
+                respond(ex, 404, "{}");
+            }
+        });
+        redirectServer.start();
+
+        try {
+            String base = "http://127.0.0.1:" + redirectServer.getAddress().getPort();
+            DingTalkChannel ch = DingTalkChannel.create(Config.builder("ding-test", "s")
+                    .apiBase(base).oapiBase(base)
+                    .ssrfAllowlist(Arrays.asList("127.0.0.1:" + redirectServer.getAddress().getPort())).build());
+
+            try {
+                ch.downloadFile("dc-1", "m-1", "file");
+                fail("expected SSRF redirect bypass to be blocked");
+            } catch (RuntimeException expected) {
+                // expected SSRF rejection
+            }
+        } finally {
+            redirectServer.stop(0);
+            targetServer.stop(0);
         }
     }
 

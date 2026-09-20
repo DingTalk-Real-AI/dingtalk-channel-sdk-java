@@ -195,21 +195,12 @@ public final class DingTalkChannel {
     /** 下载媒体文件。 */
     public byte[] downloadFile(String downloadCode, String msgId, String mediaType) {
         String downloadUrl = resolveDownloadUrl(downloadCode, msgId);
-        SsrfGuard.assertPublicUrl(downloadUrl, cfg.ssrfAllowlist);
-
-        // 下载文件内容
         try {
-            java.net.URL u = new java.net.URL(downloadUrl);
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(30000);
-            int status = conn.getResponseCode();
-            if (status != 200) {
-                throw new RuntimeException("download failed: http " + status);
-            }
+            java.net.HttpURLConnection conn = openMediaConnection(downloadUrl);
             try (java.io.InputStream in = conn.getInputStream()) {
                 return in.readAllBytes();
+            } finally {
+                conn.disconnect();
             }
         } catch (java.io.IOException e) {
             throw new RuntimeException("download failed: " + e.getMessage(), e);
@@ -217,7 +208,7 @@ public final class DingTalkChannel {
     }
 
     /**
-     * 流式下载媒体文件到本地路径，不整块占用内存（对齐 lark channel-sdk 的 downloadResourceToFile）。
+     * 流式下载媒体文件到本地路径，不整块占用内存。
      * 父目录必须已存在；先写同目录临时文件再原子重命名，失败不落半截文件。
      *
      * @return 写入的字节数
@@ -227,24 +218,17 @@ public final class DingTalkChannel {
             throw new IllegalArgumentException("destPath cannot be empty");
         }
         String downloadUrl = resolveDownloadUrl(downloadCode, msgId);
-        SsrfGuard.assertPublicUrl(downloadUrl, cfg.ssrfAllowlist);
 
         java.nio.file.Path dest = destPath.toAbsolutePath().normalize();
         java.nio.file.Path tmp = null;
         try {
-            java.net.URL u = new java.net.URL(downloadUrl);
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(30000);
-            int status = conn.getResponseCode();
-            if (status != 200) {
-                throw new RuntimeException("download failed: http " + status);
-            }
-            tmp = java.nio.file.Files.createTempFile(dest.getParent(), "." + dest.getFileName(), ".tmp");
+            tmp = java.nio.file.Files.createTempFile(dest.getParent(), ".tmp-" + dest.getFileName().toString() + "-", ".tmp");
+            java.net.HttpURLConnection conn = openMediaConnection(downloadUrl);
             long n;
             try (java.io.InputStream in = conn.getInputStream()) {
                 n = java.nio.file.Files.copy(in, tmp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                conn.disconnect();
             }
             try {
                 java.nio.file.Files.move(tmp, dest,
@@ -268,6 +252,44 @@ public final class DingTalkChannel {
         }
     }
 
+    /** 打开媒体下载连接，支持 SSRF 校验与重定向跟踪。 */
+    private java.net.HttpURLConnection openMediaConnection(String initialUrl) throws java.io.IOException {
+        String currentUrl = initialUrl;
+        int redirects = 0;
+        while (redirects < 5) {
+            SsrfGuard.assertPublicUrl(currentUrl, cfg.ssrfAllowlist);
+            java.net.URL u = new java.net.URL(currentUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+            conn.setInstanceFollowRedirects(false);
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(30000);
+            int status = conn.getResponseCode();
+            if (status >= 300 && status < 400) {
+                String location = conn.getHeaderField("Location");
+                conn.disconnect();
+                if (location == null || location.isEmpty()) {
+                    throw new java.io.IOException("redirect with missing Location header");
+                }
+                currentUrl = new java.net.URL(u, location).toString();
+                redirects++;
+                continue;
+            }
+            if (status != 200) {
+                try (java.io.InputStream err = conn.getErrorStream()) {
+                    if (err != null) {
+                        err.readAllBytes();
+                    }
+                } finally {
+                    conn.disconnect();
+                }
+                throw new RuntimeException("download failed: http " + status);
+            }
+            return conn;
+        }
+        throw new java.io.IOException("too many redirects");
+    }
+
     /** 换取媒体下载 URL（downloadCode → downloadUrl）。 */
     private String resolveDownloadUrl(String downloadCode, String msgId) {
         if (downloadCode == null || downloadCode.isEmpty()) {
@@ -275,10 +297,11 @@ public final class DingTalkChannel {
         }
         java.util.Map<String, String> headers = new java.util.HashMap<>();
         headers.put("x-acs-dingtalk-access-token", tokens.get());
-        String url = cfg.apiBase + "/v1.0/robot/messageFiles/download"
-                + "?downloadCode=" + downloadCode + "&messageId=" + msgId
-                + "&robotCode=" + cfg.clientId;
-        JsonObject resp = HttpClient.request("GET", url, headers, null).getAsJsonObject();
+        String url = cfg.apiBase + "/v1.0/robot/messageFiles/download";
+        JsonObject reqBody = new JsonObject();
+        reqBody.addProperty("downloadCode", downloadCode);
+        reqBody.addProperty("robotCode", cfg.clientId);
+        JsonObject resp = HttpClient.request("POST", url, headers, reqBody).getAsJsonObject();
         String downloadUrl = resp.has("downloadUrl") ? resp.get("downloadUrl").getAsString() : "";
         if (downloadUrl.isEmpty()) {
             throw new RuntimeException("empty download URL");

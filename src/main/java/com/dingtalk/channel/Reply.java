@@ -40,10 +40,11 @@ public final class Reply {
     public String downloadUrl(String downloadCode, String msgId) {
         Map<String, String> headers = new HashMap<>();
         headers.put("x-acs-dingtalk-access-token", tokens.get());
-        String url = cfg.apiBase + "/v1.0/robot/messageFiles/download"
-                + "?downloadCode=" + downloadCode + "&messageId=" + msgId
-                + "&robotCode=" + cfg.clientId;
-        JsonObject out = HttpClient.request("GET", url, headers, null).getAsJsonObject();
+        String url = cfg.apiBase + "/v1.0/robot/messageFiles/download";
+        JsonObject reqBody = new JsonObject();
+        reqBody.addProperty("downloadCode", downloadCode);
+        reqBody.addProperty("robotCode", cfg.clientId);
+        JsonObject out = HttpClient.request("POST", url, headers, reqBody).getAsJsonObject();
         return out.has("downloadUrl") ? out.get("downloadUrl").getAsString() : "";
     }
 
