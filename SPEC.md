@@ -1,5 +1,3 @@
-**English** | [简体中文](./SPEC.zh-CN.md)
-
 # DingTalk Channel SDK — Four-Language Unified Contract (SPEC v0.1)
 
 > Positioning: **A conversation access layer decoupled from Agent runtime**. The SDK handles the dirty work of the "channel",

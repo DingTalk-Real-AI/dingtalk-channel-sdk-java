@@ -4,8 +4,8 @@ import com.google.gson.JsonObject;
 import com.dingtalk.channel.IncomingMessage;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +29,7 @@ public class PolicyOverrideTest {
         Map<String, PolicyConfig.GroupOverride> ov = new HashMap<>();
         ov.put("cid-other", new PolicyConfig.GroupOverride());
         PolicyGate gate = new PolicyGate(new PolicyConfig()
-                .groupAllowlist(List.of("cid-allowed"))
+                .groupAllowlist(Arrays.asList("cid-allowed"))
                 .groupOverrides(ov));
         assertTrue(gate.evaluate(msg("cid-other", "staff-1", true)).allowed);
         assertEquals(RejectReason.GROUP_NOT_ALLOWED, gate.evaluate(msg("cid-unknown", "staff-1", true)).reason);
@@ -40,7 +40,7 @@ public class PolicyOverrideTest {
         Map<String, PolicyConfig.GroupOverride> ov = new HashMap<>();
         ov.put("cid-bad", new PolicyConfig.GroupOverride().enabled(true));
         PolicyGate gate = new PolicyGate(new PolicyConfig()
-                .groupBlocklist(List.of("cid-bad"))
+                .groupBlocklist(Arrays.asList("cid-bad"))
                 .groupOverrides(ov));
         assertEquals(RejectReason.GROUP_BLOCKED, gate.evaluate(msg("cid-bad", "staff-1", true)).reason);
     }
@@ -66,8 +66,8 @@ public class PolicyOverrideTest {
     public void overrideAllowFromAndBlockFrom() {
         Map<String, PolicyConfig.GroupOverride> ov = new HashMap<>();
         ov.put("cid-1", new PolicyConfig.GroupOverride()
-                .allowFrom(List.of("staff-1", "staff-2"))
-                .blockFrom(List.of("staff-2")));
+                .allowFrom(Arrays.asList("staff-1", "staff-2"))
+                .blockFrom(Arrays.asList("staff-2")));
         PolicyGate gate = new PolicyGate(new PolicyConfig().groupOverrides(ov));
         assertTrue(gate.evaluate(msg("cid-1", "staff-1", true)).allowed);
         assertEquals(RejectReason.SENDER_NOT_ALLOWED, gate.evaluate(msg("cid-1", "staff-9", true)).reason);
