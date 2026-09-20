@@ -198,7 +198,7 @@ public final class DingTalkChannel {
         try {
             java.net.HttpURLConnection conn = openMediaConnection(downloadUrl);
             try (java.io.InputStream in = conn.getInputStream()) {
-                return in.readAllBytes();
+                return readAll(in);
             } finally {
                 conn.disconnect();
             }
@@ -278,7 +278,7 @@ public final class DingTalkChannel {
             if (status != 200) {
                 try (java.io.InputStream err = conn.getErrorStream()) {
                     if (err != null) {
-                        err.readAllBytes();
+                        readAll(err);
                     }
                 } finally {
                     conn.disconnect();
@@ -288,6 +288,16 @@ public final class DingTalkChannel {
             return conn;
         }
         throw new java.io.IOException("too many redirects");
+    }
+
+    private static byte[] readAll(java.io.InputStream in) throws java.io.IOException {
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int n;
+        while ((n = in.read(chunk)) != -1) {
+            buf.write(chunk, 0, n);
+        }
+        return buf.toByteArray();
     }
 
     /** 换取媒体下载 URL（downloadCode → downloadUrl）。 */
