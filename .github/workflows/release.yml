@@ -46,7 +46,7 @@ jobs:
         run: mvn clean install
 
       - name: Deploy to Sonatype Central
-        run: mvn deploy --settings settings.xml -DskipTests
+        run: mvn -P release clean deploy --settings settings.xml -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
