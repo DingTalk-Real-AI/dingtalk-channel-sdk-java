@@ -1,0 +1,41 @@
+[
+  {
+    "version": "v1.0",
+    "createSurface": {
+      "surfaceId": "channel-sdk-example",
+      "catalogId": "https://dingtalk.com/card/a2ui/catalogs/public/catalog.json"
+    }
+  },
+  {
+    "version": "v1.0",
+    "updateDataModel": {
+      "surfaceId": "channel-sdk-example",
+      "path": "/",
+      "value": {
+        "text": "这是 Channel SDK 的 A2UI 示例。"
+      }
+    }
+  },
+  {
+    "version": "v1.0",
+    "updateComponents": {
+      "surfaceId": "channel-sdk-example",
+      "components": [
+        {
+          "id": "root",
+          "component": "Column",
+          "children": [
+            "body"
+          ]
+        },
+        {
+          "id": "body",
+          "component": "Markdown",
+          "content": {
+            "path": "/text"
+          }
+        }
+      ]
+    }
+  }
+]

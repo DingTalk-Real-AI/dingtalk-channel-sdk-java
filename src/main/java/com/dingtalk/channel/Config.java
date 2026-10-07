@@ -29,6 +29,8 @@ public class Config {
     final String apiBase;
     final String oapiBase;
     final String cardTemplateId;
+    /** 显式配置的 A2UI 发送通道；默认不启用。 */
+    final A2UIClient a2uiClient;
     final long streamThrottleMs;
     final long cardWatchdogMs;
     final long errorCooldownMs;
@@ -55,6 +57,7 @@ public class Config {
     private Config(Builder b) {
         this.clientId = b.clientId;
         this.clientSecret = b.clientSecret;
+        this.a2uiClient = b.a2uiClient;
         this.apiBase = b.apiBase == null || b.apiBase.isEmpty() ? DEFAULT_API_BASE : b.apiBase;
         this.oapiBase = b.oapiBase == null || b.oapiBase.isEmpty() ? DEFAULT_OAPI_BASE : b.oapiBase;
         this.cardTemplateId = b.cardTemplateId == null || b.cardTemplateId.isEmpty()
@@ -96,6 +99,7 @@ public class Config {
         String apiBase;
         String oapiBase;
         String cardTemplateId;
+        A2UIClient a2uiClient;
         long streamThrottleMs;
         long cardWatchdogMs = -1;
         long errorCooldownMs = -1;
@@ -121,6 +125,7 @@ public class Config {
         public Builder apiBase(String v) { this.apiBase = v; return this; }
         public Builder oapiBase(String v) { this.oapiBase = v; return this; }
         public Builder cardTemplateId(String v) { this.cardTemplateId = v; return this; }
+        public Builder a2uiClient(A2UIClient v) { this.a2uiClient = v; return this; }
         public Builder streamThrottleMs(long v) { this.streamThrottleMs = v; return this; }
         public Builder cardWatchdogMs(long v) { this.cardWatchdogMs = v; return this; }
         public Builder errorCooldownMs(long v) { this.errorCooldownMs = v; return this; }

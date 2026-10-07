@@ -104,3 +104,8 @@ DD_CLIENT_ID=... DD_CLIENT_SECRET=... \
 ## License
 
 MIT
+
+
+## A2UI 卡片
+
+支持通过显式配置的 DWS 通道发送和更新 A2UI 卡片，使用 DWS 登录身份。接口、完整示例、消息校验和回调范围见 [A2UI 接入说明](A2UI.md)。
