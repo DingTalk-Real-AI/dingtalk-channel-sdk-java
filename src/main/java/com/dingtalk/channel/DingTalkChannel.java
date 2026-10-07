@@ -330,6 +330,20 @@ public final class DingTalkChannel {
         sender.sendMarkdown(target, title, text);
     }
 
+    /** 通过显式配置的 A2UI 通道发送，返回 bizId 与完整回执。 */
+    public A2UICardResult sendA2UICard(A2UITarget target, java.util.List<?> messages)
+            throws java.io.IOException, InterruptedException {
+        if (cfg.a2uiClient == null) throw new IllegalStateException("请先配置 a2uiClient（例如 DwsA2UIClient）");
+        return cfg.a2uiClient.sendCard(target, messages);
+    }
+
+    /** 用服务端 bizId 更新同一卡片，flowStatus 必填。 */
+    public com.google.gson.JsonObject updateA2UICard(String bizId, java.util.List<?> messages, String flowStatus)
+            throws java.io.IOException, InterruptedException {
+        if (cfg.a2uiClient == null) throw new IllegalStateException("请先配置 a2uiClient（例如 DwsA2UIClient）");
+        return cfg.a2uiClient.updateCard(bizId, messages, flowStatus);
+    }
+
     public void sendImage(SendTarget target, String imageUrl) throws InterruptedException {
         sender.sendImage(target, imageUrl);
     }

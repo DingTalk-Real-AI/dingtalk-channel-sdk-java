@@ -1,0 +1,10 @@
+[
+  {
+    "version": "v1.0",
+    "updateDataModel": {
+      "surfaceId": "channel-sdk-example",
+      "path": "/text",
+      "value": "示例已完成；这条消息更新原卡片的数据。"
+    }
+  }
+]
